@@ -22,6 +22,7 @@ const {
   updateOption,
   deleteOption,
 } = require('../models/option');
+const { getResponsesForFormById } = require('../models/response');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -266,6 +267,30 @@ router.post('/:id/duplicate', async (req, res) => {
 
   const duplicated = await duplicateForm(req.params.id, req.user.id);
   res.status(201).json({ form: duplicated });
+});
+
+router.get('/:id/responses', async (req, res) => {
+  const existing = await getFormByIdForUser(req.params.id, req.user.id);
+  if (!existing) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  const responses = await getResponsesForFormById(req.params.id);
+  const totalResponses = responses.length;
+  const latestResponse = responses[0] ? responses[0].created_at : null;
+
+  res.json({
+    form: {
+      id: existing.id,
+      title: existing.title,
+      description: existing.description,
+    },
+    responses,
+    stats: {
+      totalResponses,
+      latestResponse,
+    },
+  });
 });
 
 module.exports = router;

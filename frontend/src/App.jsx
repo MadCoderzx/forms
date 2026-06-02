@@ -24,7 +24,7 @@ function App() {
             path="forms/:formId/edit"
             element={<ProtectedRoute redirectTo="/login"><FormEditor /></ProtectedRoute>}
           />
-          <Route path="forms/:formId" element={<PublicForm />} />
+          <Route path="forms/:publicId" element={<PublicForm />} />
           <Route
             path="responses"
             element={<ProtectedRoute redirectTo="/login"><Responses /></ProtectedRoute>}
