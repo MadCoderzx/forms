@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+input,
+button,
+select,
+textarea {
+  @apply font-sans bg-white text-slate-900 border border-slate-300;
+}
+
+input::placeholder,
+textarea::placeholder {
+  @apply text-slate-400;
+}
