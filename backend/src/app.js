@@ -20,4 +20,15 @@ app.use('/api/public/forms', publicFormsRouter);
 
 app.use((req, res) => res.status(404).json({ error: 'Not Found' }));
 
+app.use((err, req, res, next) => {
+  console.error(err);
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  const status = err.status || 500;
+  const message = err.message || 'Internal Server Error';
+  res.status(status).json({ error: message });
+});
+
 module.exports = app;

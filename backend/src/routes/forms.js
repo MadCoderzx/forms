@@ -23,6 +23,12 @@ const {
   deleteOption,
 } = require('../models/option');
 const { getResponsesForFormById } = require('../models/response');
+const {
+  isNonEmptyString,
+  isBoolean,
+  isValidPosition,
+  isValidOptions,
+} = require('../utils/validation');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -36,14 +42,17 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const { title, description } = req.body;
-  if (!title) {
+  if (!isNonEmptyString(title)) {
     return res.status(400).json({ error: 'Title is required' });
+  }
+  if (description != null && typeof description !== 'string') {
+    return res.status(400).json({ error: 'Description must be a string' });
   }
 
   const form = await createForm({
     user_id: req.user.id,
-    title,
-    description: description || null,
+    title: title.trim(),
+    description: description ? description.trim() : null,
   });
 
   res.status(201).json({ form });
@@ -65,22 +74,30 @@ router.post('/:id/questions', async (req, res) => {
     return res.status(404).json({ error: 'Form not found' });
   }
 
-  if (!question_type || !label) {
+  if (!isValidQuestionType(question_type) || !isNonEmptyString(label)) {
     return res.status(400).json({ error: 'Question type and label are required' });
   }
 
-  if (!isValidQuestionType(question_type)) {
-    return res.status(400).json({ error: 'Invalid question type' });
+  if (!isBoolean(required)) {
+    return res.status(400).json({ error: 'Required must be true or false' });
   }
 
-  if (choiceTypes.includes(question_type) && (!Array.isArray(options) || options.length === 0)) {
-    return res.status(400).json({ error: 'Choice questions require options' });
+  if (!isValidPosition(position)) {
+    return res.status(400).json({ error: 'Position must be a non-negative integer' });
+  }
+
+  if (choiceTypes.includes(question_type)) {
+    if (!isValidOptions(options)) {
+      return res.status(400).json({ error: 'Choice questions require at least one valid option' });
+    }
+  } else if (options != null) {
+    return res.status(400).json({ error: 'Only choice questions may include options' });
   }
 
   const question = await createQuestion({
     form_id: req.params.id,
     question_type,
-    label,
+    label: label.trim(),
     required,
     position,
   });
@@ -89,13 +106,13 @@ router.post('/:id/questions', async (req, res) => {
     const createdOptions = [];
     for (let index = 0; index < options.length; index += 1) {
       const option = options[index];
-      if (!option || !option.label) {
+      if (!option || !isNonEmptyString(option.label)) {
         return res.status(400).json({ error: 'Each option must include a label' });
       }
 
       const created = await createOption({
         question_id: question.id,
-        label: option.label,
+        label: option.label.trim(),
         position: typeof option.position === 'number' ? option.position : index,
       });
       createdOptions.push(created);
@@ -120,18 +137,22 @@ router.put('/:formId/questions/:questionId', async (req, res) => {
     return res.status(404).json({ error: 'Question not found' });
   }
 
-  if (!question_type || !label) {
+  if (!isValidQuestionType(question_type) || !isNonEmptyString(label)) {
     return res.status(400).json({ error: 'Question type and label are required' });
   }
 
-  if (!isValidQuestionType(question_type)) {
-    return res.status(400).json({ error: 'Invalid question type' });
+  if (!isBoolean(required)) {
+    return res.status(400).json({ error: 'Required must be true or false' });
+  }
+
+  if (!isValidPosition(position)) {
+    return res.status(400).json({ error: 'Position must be a non-negative integer' });
   }
 
   const updated = await updateQuestion({
     id: req.params.questionId,
     question_type,
-    label,
+    label: label.trim(),
     required,
     position,
   });
@@ -166,13 +187,21 @@ router.post('/:formId/questions/:questionId/options', async (req, res) => {
     return res.status(404).json({ error: 'Question not found' });
   }
 
-  if (!label) {
+  if (!choiceTypes.includes(existingQuestion.question_type)) {
+    return res.status(400).json({ error: 'Options can only be added to choice questions' });
+  }
+
+  if (!isNonEmptyString(label)) {
     return res.status(400).json({ error: 'Option label is required' });
+  }
+
+  if (!isValidPosition(position)) {
+    return res.status(400).json({ error: 'Position must be a non-negative integer' });
   }
 
   const option = await createOption({
     question_id: req.params.questionId,
-    label,
+    label: label.trim(),
     position,
   });
 
@@ -196,13 +225,17 @@ router.put('/:formId/questions/:questionId/options/:optionId', async (req, res) 
     return res.status(404).json({ error: 'Option not found' });
   }
 
-  if (!label) {
+  if (!isNonEmptyString(label)) {
     return res.status(400).json({ error: 'Option label is required' });
+  }
+
+  if (!isValidPosition(position)) {
+    return res.status(400).json({ error: 'Position must be a non-negative integer' });
   }
 
   const updatedOption = await updateOption({
     id: req.params.optionId,
-    label,
+    label: label.trim(),
     position,
   });
 

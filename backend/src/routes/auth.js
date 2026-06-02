@@ -4,13 +4,22 @@ const bcrypt = require('bcryptjs');
 const { findUserByEmail, createUser } = require('../models/user');
 const { signToken } = require('../utils/jwt');
 const authMiddleware = require('../middleware/auth');
+const { isValidEmail, isNonEmptyString } = require('../utils/validation');
 
 const router = express.Router();
 
 router.post('/register', async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) {
+  if (!isNonEmptyString(email) || !isNonEmptyString(password)) {
     return res.status(400).json({ error: 'Email and password are required' });
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'Please provide a valid email address' });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters long' });
   }
 
   const existing = await findUserByEmail(email.toLowerCase());

@@ -8,6 +8,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const { login, user } = useAuth();
 
@@ -20,12 +21,15 @@ export default function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(null);
+    setSubmitting(true);
     try {
       const response = await api.post('/auth/login', { email, password });
       login(response.data);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Unable to log in');
+      setError(err.message || 'Unable to log in');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -63,8 +67,12 @@ export default function Login() {
           </div>
         </label>
         {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-        <button type="submit" className="w-full rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
-          Login
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+        >
+          {submitting ? 'Signing in…' : 'Login'}
         </button>
       </form>
     </div>

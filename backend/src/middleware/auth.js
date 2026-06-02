@@ -12,12 +12,12 @@ async function authMiddleware(req, res, next) {
     const payload = verifyToken(token);
     const user = await findUserById(payload.id);
     if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: 'Invalid or expired token' });
     }
     req.user = user;
     next();
   } catch (err) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
 
