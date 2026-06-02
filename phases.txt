@@ -1,0 +1,490 @@
+Phase 0: Project Setup
+
+Goal: Create the base project structure.
+
+Tasks:
+
+Create folder structure:
+frontend/
+backend/
+database/
+docker-compose.yml
+README.md
+.env.example
+Initialize Git.
+Add basic .gitignore.
+Add project README with setup instructions placeholder.
+Checkpoint:
+
+git add .
+git commit -m "Phase 0: initialize project structure"
+Rollback point: Empty but clean project foundation.
+
+Phase 1: Docker Base Setup
+
+Goal: Make all containers start successfully, even with minimal code.
+
+Tasks:
+
+Create frontend/Dockerfile.
+Create backend/Dockerfile.
+Create docker-compose.yml.
+Add PostgreSQL service.
+Add persistent PostgreSQL volume.
+Add internal Docker network.
+Add environment variables for database connection.
+Add a simple backend health route:
+GET /health
+Add a simple frontend page saying “Form Builder”.
+Success criteria:
+
+docker compose up --build
+Should start:
+
+frontend
+backend
+postgres
+Backend health check should work.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 1: add dockerized frontend backend and database"
+Rollback point: Working multi-container skeleton.
+
+Phase 2: Backend Foundation
+
+Goal: Build the Express backend structure.
+
+Tasks:
+
+Set up Express app.
+Add middleware:
+cors
+express.json
+request logging
+Add environment config.
+Add PostgreSQL connection pool.
+Add route structure:
+backend/src/
+  app.js
+  server.js
+  config/
+  routes/
+  controllers/
+  middleware/
+  models/
+  utils/
+Add /api/health.
+Confirm backend can connect to PostgreSQL.
+Success criteria:
+
+docker compose up --build
+Backend should confirm database connectivity.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 2: add backend application foundation"
+Rollback point: Backend is structured and connected to DB.
+
+Phase 3: Database Schema
+
+Goal: Create normalized PostgreSQL schema.
+
+Tasks:
+
+Create SQL migration/init file in database/.
+Add tables:
+users
+forms
+questions
+options
+responses
+answers
+Define relationships:
+users 1 -> many forms
+forms 1 -> many questions
+questions 1 -> many options
+forms 1 -> many responses
+responses 1 -> many answers
+questions 1 -> many answers
+Add timestamps:
+
+created_at
+updated_at
+Add indexes for:
+
+forms.user_id
+forms.public_id
+questions.form_id
+responses.form_id
+answers.response_id
+Success criteria:
+
+Database initializes cleanly from Docker Compose.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 3: add normalized database schema"
+Rollback point: Stable database schema.
+
+Phase 4: Authentication Backend
+
+Goal: Add user registration, login, and JWT authentication.
+
+Tasks:
+
+Add password hashing with bcrypt.
+Add JWT utilities.
+Add auth routes:
+POST /api/auth/register
+POST /api/auth/login
+GET /api/auth/me
+Add protected route middleware.
+Validate duplicate emails.
+Return JWT token on login/register.
+Success criteria:
+
+Users can register, log in, and access protected /me.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 4: add backend authentication"
+Rollback point: Working authenticated backend.
+
+Phase 5: Frontend Foundation
+
+Goal: Build the React app structure.
+
+Tasks:
+
+Set up React Router.
+Set up Axios API client.
+Set up Tailwind CSS.
+Add layout components.
+Add pages:
+Login
+Register
+Dashboard
+FormEditor
+PublicForm
+Responses
+Add protected route wrapper.
+Store JWT token safely, usually in local storage for this learning project.
+Success criteria:
+
+Frontend routes work and protected pages redirect unauthenticated users.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 5: add frontend application foundation"
+Rollback point: Navigable frontend shell.
+
+Phase 6: Frontend Authentication
+
+Goal: Connect frontend auth UI to backend.
+
+Tasks:
+
+Build registration form.
+Build login form.
+Connect both to backend auth API.
+Store token after login/register.
+Add logout.
+Add current user loading state.
+Redirect logged-in users to dashboard.
+Success criteria:
+
+User can register, log in, refresh, and stay authenticated.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 6: connect frontend authentication"
+Rollback point: Full-stack login/register works.
+
+Phase 7: Form CRUD Backend
+
+Goal: Add form management APIs.
+
+Tasks:
+
+Add routes:
+GET /api/forms
+POST /api/forms
+GET /api/forms/:id
+PUT /api/forms/:id
+DELETE /api/forms/:id
+POST /api/forms/:id/duplicate
+Protect all form management routes.
+Ensure users can only access their own forms.
+Generate unique public form identifier.
+Store form title and description.
+Success criteria:
+
+Authenticated users can create, read, update, delete, and duplicate forms through API.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 7: add backend form CRUD"
+Rollback point: Backend form management works.
+
+Phase 8: Question and Option Backend
+
+Goal: Add question and option management.
+
+Tasks:
+
+Support field types:
+short_text
+long_text
+email
+number
+dropdown
+radio
+checkbox
+Store questions in order.
+Store options for dropdown, radio, and checkbox fields.
+Add backend validation for required fields.
+Update form APIs to return questions and options.
+Success criteria:
+
+A form can store a full dynamic question structure.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 8: add backend questions and options"
+Rollback point: Dynamic form schema works in backend.
+
+Phase 9: Form Editor Frontend
+
+Goal: Build form creation and editing UI.
+
+Tasks:
+
+Create form editor page.
+Add ability to:
+edit title
+edit description
+add questions
+edit questions
+delete questions
+reorder questions if desired
+add options for dropdown/radio/checkbox
+mark questions as required
+Save form to backend.
+Load existing form for editing.
+Add duplicate and delete actions.
+Success criteria:
+
+User can fully create and edit forms from the UI.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 9: add frontend form editor"
+Rollback point: Form creation UI works.
+
+Phase 10: Dashboard
+
+Goal: Build user dashboard.
+
+Tasks:
+
+Show logged-in user’s forms.
+Display:
+form title
+response count
+creation date
+last modified date
+public share link
+Add actions:
+edit
+duplicate
+delete
+view responses
+copy public link
+Success criteria:
+
+Dashboard gives complete form management overview.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 10: add user dashboard"
+Rollback point: Main authenticated app flow works.
+
+Phase 11: Public Form Sharing
+
+Goal: Allow anonymous users to open public forms.
+
+Tasks:
+
+Add backend public route:
+GET /api/public/forms/:publicId
+Add frontend public form page:
+/forms/:publicId
+Render fields dynamically.
+Validate required fields.
+Do not require authentication.
+Success criteria:
+
+Public form link opens without login.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 11: add public form sharing"
+Rollback point: Shareable forms work.
+
+Phase 12: Response Submission
+
+Goal: Store anonymous form submissions.
+
+Tasks:
+
+Add backend route:
+POST /api/public/forms/:publicId/responses
+Store response record.
+Store each answer normalized in answers.
+Validate:
+required questions
+email format
+number format
+valid options
+Add success page or confirmation state.
+Success criteria:
+
+Anonymous users can submit responses successfully.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 12: add public response submission"
+Rollback point: End-to-end form submission works.
+
+Phase 13: Response Viewing
+
+Goal: Allow form owners to view collected responses.
+
+Tasks:
+
+Add protected backend route:
+GET /api/forms/:id/responses
+Ensure only form owner can view responses.
+Add frontend responses page.
+Show:
+submission date
+answers by question
+total response count
+Add simple statistics:
+counts for dropdown/radio/checkbox
+response total
+latest submission date
+Success criteria:
+
+Form owner can view submitted data.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 13: add response viewing and statistics"
+Rollback point: Response management works.
+
+Phase 14: CSV Export
+
+Goal: Export responses as CSV.
+
+Tasks:
+
+Add backend route:
+GET /api/forms/:id/responses/export
+Generate CSV with:
+response ID
+submitted date
+one column per question
+Protect export route.
+Add frontend export button.
+Success criteria:
+
+User can download response CSV.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 14: add CSV response export"
+Rollback point: Export feature works.
+
+Phase 15: Validation and Error Handling
+
+Goal: Improve stability and user experience.
+
+Tasks:
+
+Add backend request validation.
+Add consistent error response format.
+Add frontend error messages.
+Add loading states.
+Add empty states.
+Handle expired/invalid JWT.
+Prevent invalid form structures from saving.
+Success criteria:
+
+App handles normal user mistakes gracefully.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 15: improve validation and error handling"
+Rollback point: Stable user-facing app.
+
+Phase 16: Docker Production Polish
+
+Goal: Make Docker setup clean and presentable.
+
+Tasks:
+
+Review Dockerfiles.
+Add .dockerignore.
+Ensure frontend uses correct backend API URL.
+Ensure backend waits for PostgreSQL or retries DB connection.
+Add production-friendly Compose setup.
+Document environment variables.
+Confirm fresh setup works from scratch:
+docker compose down -v
+docker compose up --build
+Success criteria:
+
+A new user can run the full app with Docker Compose.
+
+Checkpoint:
+
+git add .
+git commit -m "Phase 16: polish docker deployment"
+Rollback point: Final containerized app works.
+
+Phase 17: Documentation and Demo
+
+Goal: Prepare the project for submission or presentation.
+
+Tasks:
+
+Complete README.
+Add setup instructions.
+Add Docker commands.
+Add API overview.
+Add database schema summary.
+Add screenshots if needed.
+Add learning outcomes section.
+Add troubleshooting section.
+Checkpoint:
+
+git add .
+git commit -m "Phase 17: add final documentation"
+Rollback point: Submission-ready project.

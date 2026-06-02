@@ -1,0 +1,271 @@
+const express = require('express');
+const authMiddleware = require('../middleware/auth');
+const {
+  getFormsByUserId,
+  getFormByIdForUser,
+  getFormWithQuestionsAndOptionsById,
+  createForm,
+  updateForm,
+  deleteForm,
+  duplicateForm,
+} = require('../models/form');
+const {
+  isValidQuestionType,
+  getQuestionById,
+  createQuestion,
+  updateQuestion,
+  deleteQuestion,
+} = require('../models/question');
+const {
+  getOptionById,
+  createOption,
+  updateOption,
+  deleteOption,
+} = require('../models/option');
+
+const router = express.Router();
+router.use(authMiddleware);
+
+const choiceTypes = ['dropdown', 'radio', 'checkbox'];
+
+router.get('/', async (req, res) => {
+  const forms = await getFormsByUserId(req.user.id);
+  res.json({ forms });
+});
+
+router.post('/', async (req, res) => {
+  const { title, description } = req.body;
+  if (!title) {
+    return res.status(400).json({ error: 'Title is required' });
+  }
+
+  const form = await createForm({
+    user_id: req.user.id,
+    title,
+    description: description || null,
+  });
+
+  res.status(201).json({ form });
+});
+
+router.get('/:id', async (req, res) => {
+  const form = await getFormWithQuestionsAndOptionsById(req.params.id, req.user.id);
+  if (!form) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  res.json({ form });
+});
+
+router.post('/:id/questions', async (req, res) => {
+  const { question_type, label, required = false, position = 0, options } = req.body;
+  const form = await getFormByIdForUser(req.params.id, req.user.id);
+  if (!form) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  if (!question_type || !label) {
+    return res.status(400).json({ error: 'Question type and label are required' });
+  }
+
+  if (!isValidQuestionType(question_type)) {
+    return res.status(400).json({ error: 'Invalid question type' });
+  }
+
+  if (choiceTypes.includes(question_type) && (!Array.isArray(options) || options.length === 0)) {
+    return res.status(400).json({ error: 'Choice questions require options' });
+  }
+
+  const question = await createQuestion({
+    form_id: req.params.id,
+    question_type,
+    label,
+    required,
+    position,
+  });
+
+  if (Array.isArray(options) && options.length > 0) {
+    const createdOptions = [];
+    for (let index = 0; index < options.length; index += 1) {
+      const option = options[index];
+      if (!option || !option.label) {
+        return res.status(400).json({ error: 'Each option must include a label' });
+      }
+
+      const created = await createOption({
+        question_id: question.id,
+        label: option.label,
+        position: typeof option.position === 'number' ? option.position : index,
+      });
+      createdOptions.push(created);
+    }
+    question.options = createdOptions;
+  } else {
+    question.options = [];
+  }
+
+  res.status(201).json({ question });
+});
+
+router.put('/:formId/questions/:questionId', async (req, res) => {
+  const { question_type, label, required = false, position = 0 } = req.body;
+  const form = await getFormByIdForUser(req.params.formId, req.user.id);
+  if (!form) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  const existingQuestion = await getQuestionById(req.params.questionId);
+  if (!existingQuestion || existingQuestion.form_id !== Number(req.params.formId)) {
+    return res.status(404).json({ error: 'Question not found' });
+  }
+
+  if (!question_type || !label) {
+    return res.status(400).json({ error: 'Question type and label are required' });
+  }
+
+  if (!isValidQuestionType(question_type)) {
+    return res.status(400).json({ error: 'Invalid question type' });
+  }
+
+  const updated = await updateQuestion({
+    id: req.params.questionId,
+    question_type,
+    label,
+    required,
+    position,
+  });
+
+  res.json({ question: updated });
+});
+
+router.delete('/:formId/questions/:questionId', async (req, res) => {
+  const form = await getFormByIdForUser(req.params.formId, req.user.id);
+  if (!form) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  const existingQuestion = await getQuestionById(req.params.questionId);
+  if (!existingQuestion || existingQuestion.form_id !== Number(req.params.formId)) {
+    return res.status(404).json({ error: 'Question not found' });
+  }
+
+  await deleteQuestion(req.params.questionId);
+  res.status(204).end();
+});
+
+router.post('/:formId/questions/:questionId/options', async (req, res) => {
+  const { label, position = 0 } = req.body;
+  const form = await getFormByIdForUser(req.params.formId, req.user.id);
+  if (!form) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  const existingQuestion = await getQuestionById(req.params.questionId);
+  if (!existingQuestion || existingQuestion.form_id !== Number(req.params.formId)) {
+    return res.status(404).json({ error: 'Question not found' });
+  }
+
+  if (!label) {
+    return res.status(400).json({ error: 'Option label is required' });
+  }
+
+  const option = await createOption({
+    question_id: req.params.questionId,
+    label,
+    position,
+  });
+
+  res.status(201).json({ option });
+});
+
+router.put('/:formId/questions/:questionId/options/:optionId', async (req, res) => {
+  const { label, position = 0 } = req.body;
+  const form = await getFormByIdForUser(req.params.formId, req.user.id);
+  if (!form) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  const existingQuestion = await getQuestionById(req.params.questionId);
+  if (!existingQuestion || existingQuestion.form_id !== Number(req.params.formId)) {
+    return res.status(404).json({ error: 'Question not found' });
+  }
+
+  const option = await getOptionById(req.params.optionId);
+  if (!option || option.question_id !== Number(req.params.questionId)) {
+    return res.status(404).json({ error: 'Option not found' });
+  }
+
+  if (!label) {
+    return res.status(400).json({ error: 'Option label is required' });
+  }
+
+  const updatedOption = await updateOption({
+    id: req.params.optionId,
+    label,
+    position,
+  });
+
+  res.json({ option: updatedOption });
+});
+
+router.delete('/:formId/questions/:questionId/options/:optionId', async (req, res) => {
+  const form = await getFormByIdForUser(req.params.formId, req.user.id);
+  if (!form) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  const existingQuestion = await getQuestionById(req.params.questionId);
+  if (!existingQuestion || existingQuestion.form_id !== Number(req.params.formId)) {
+    return res.status(404).json({ error: 'Question not found' });
+  }
+
+  const option = await getOptionById(req.params.optionId);
+  if (!option || option.question_id !== Number(req.params.questionId)) {
+    return res.status(404).json({ error: 'Option not found' });
+  }
+
+  await deleteOption(req.params.optionId);
+  res.status(204).end();
+});
+
+router.put('/:id', async (req, res) => {
+  const { title, description } = req.body;
+  if (!title) {
+    return res.status(400).json({ error: 'Title is required' });
+  }
+
+  const existing = await getFormByIdForUser(req.params.id, req.user.id);
+  if (!existing) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  const updated = await updateForm({
+    id: req.params.id,
+    title,
+    description: description || null,
+  });
+
+  res.json({ form: updated });
+});
+
+router.delete('/:id', async (req, res) => {
+  const existing = await getFormByIdForUser(req.params.id, req.user.id);
+  if (!existing) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  await deleteForm(req.params.id);
+  res.status(204).end();
+});
+
+router.post('/:id/duplicate', async (req, res) => {
+  const existing = await getFormByIdForUser(req.params.id, req.user.id);
+  if (!existing) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  const duplicated = await duplicateForm(req.params.id, req.user.id);
+  res.status(201).json({ form: duplicated });
+});
+
+module.exports = router;
