@@ -293,4 +293,66 @@ router.get('/:id/responses', async (req, res) => {
   });
 });
 
+function escapeCsvValue(value) {
+  if (value == null) return '';
+  const stringValue = String(value).replace(/"/g, '""');
+  return /[",\n\r]/.test(stringValue) ? `"${stringValue}"` : stringValue;
+}
+
+function buildResponsesCsv(responses) {
+  const questionOrder = [];
+  const questionSeen = new Set();
+
+  responses.forEach((response) => {
+    response.answers.forEach((answer) => {
+      if (!questionSeen.has(answer.question_id)) {
+        questionSeen.add(answer.question_id);
+        questionOrder.push({ id: answer.question_id, label: answer.question_label });
+      }
+    });
+  });
+
+  const headers = ['Response ID', 'Submitted At', ...questionOrder.map((question) => question.label)];
+  const rows = [headers];
+
+  responses.forEach((response) => {
+    const answerMap = new Map();
+
+    response.answers.forEach((answer) => {
+      const questionId = answer.question_id;
+      const existing = answerMap.get(questionId) || '';
+      const value = ['dropdown', 'radio', 'checkbox'].includes(answer.question_type)
+        ? answer.option_label || ''
+        : answer.value || '';
+      answerMap.set(questionId, existing ? `${existing} | ${value}` : value);
+    });
+
+    const row = [
+      response.id,
+      new Date(response.created_at).toISOString(),
+      ...questionOrder.map((question) => answerMap.get(question.id) || ''),
+    ];
+
+    rows.push(row);
+  });
+
+  return rows.map((row) => row.map(escapeCsvValue).join(',')).join('\r\n');
+}
+
+router.get('/:id/responses/csv', async (req, res) => {
+  const existing = await getFormByIdForUser(req.params.id, req.user.id);
+  if (!existing) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  const responses = await getResponsesForFormById(req.params.id);
+  const csv = buildResponsesCsv(responses);
+  const safeTitle = existing.title ? existing.title.replace(/[^a-zA-Z0-9-_ ]/g, '').replace(/\s+/g, '_') : `form-${existing.id}`;
+  const filename = `${safeTitle}-responses.csv`;
+
+  res.header('Content-Type', 'text/csv');
+  res.header('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(csv);
+});
+
 module.exports = router;

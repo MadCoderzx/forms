@@ -8,6 +8,33 @@ export default function Dashboard() {
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [exportingFormId, setExportingFormId] = useState(null);
+
+  async function handleExportCsv(formId, formTitle) {
+    setExportingFormId(formId);
+    try {
+      const response = await api.get(`/forms/${formId}/responses/csv`, {
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const disposition = response.headers['content-disposition'];
+      const match = disposition && disposition.match(/filename="(.+)"/);
+      link.download = match ? match[1] : `${formTitle?.replace(/[^a-zA-Z0-9-_ ]/g, '').replace(/\s+/g, '_') || 'responses'}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      setError('Unable to export CSV.');
+    } finally {
+      setExportingFormId(null);
+    }
+  }
 
   useEffect(() => {
     async function loadForms() {
@@ -83,6 +110,14 @@ export default function Dashboard() {
                       >
                         Responses
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleExportCsv(form.id, form.title)}
+                        disabled={exportingFormId === form.id}
+                        className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100"
+                      >
+                        {exportingFormId === form.id ? 'Exporting…' : 'Export CSV'}
+                      </button>
                     </div>
                   </div>
 
