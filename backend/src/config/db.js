@@ -1,12 +1,22 @@
 const { Pool } = require('pg');
 
+const isRender = !!process.env.DATABASE_URL;
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@postgres:5432/form_builder'
+  connectionString:
+    process.env.DATABASE_URL ||
+    'postgresql://postgres:postgres@postgres:5432/form_builder',
+
+  ssl: isRender
+    ? {
+        rejectUnauthorized: false,
+      }
+    : false,
 });
 
 async function testConnection() {
   try {
-    const res = await pool.query('SELECT 1');
+    await pool.query('SELECT 1');
     return true;
   } catch (err) {
     console.error('DB connection error:', err.message || err);
