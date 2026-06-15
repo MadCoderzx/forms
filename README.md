@@ -1,3 +1,9 @@
+INTERN ID: CITS706
+NAME: MOHAMMAD ARIF
+NO. OF WEEKS: 1 WEEK
+PROJECT NAME: FORM BUILDER
+PROJECT SCOPE: DOCKERIZED WEB APPLICATION
+
 # Form Builder - Docker Demonstration Project
 
 > A containerized full-stack form builder application (React + Express + PostgreSQL) designed to demonstrate Docker concepts and containerization.
