@@ -208,3 +208,15 @@ This project demonstrates Docker fundamentals. To learn more:
 1. **Docker docs**: https://docs.docker.com/
 2. **Docker Compose**: https://docs.docker.com/compose/
 3. **Best practices**: https://docs.docker.com/develop/_best-practices/
+
+---
+
+## Screenshots
+
+| Login | Dashboard |
+|-------|-----------|
+| ![Login](screenshots/login.png) | ![Dashboard](screenshots/dashboard.png) |
+
+| Forms | Responses |
+|-------|-----------|
+| ![Forms](screenshots/forms.png) | ![Responses](screenshots/responses.png) |
