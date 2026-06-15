@@ -1,10 +1,9 @@
-- INTERN ID: CITS706
-- NAME: MOHAMMAD ARIF
-- NO. OF WEEKS: 1 WEEK
-- PROJECT NAME: FORM BUILDER
-- PROJECT SCOPE: DOCKERIZED WEB APPLICATION
-
 # Form Builder - Docker Demonstration Project
+
+**Intern ID:** CITS706  
+**Intern Name:** Mohammad Arif  
+**Duration:** 1 Week  
+**Project Scope:** Dockerized Web Application  
 
 > A containerized full-stack form builder application (React + Express + PostgreSQL) designed to demonstrate Docker concepts and containerization.
 
