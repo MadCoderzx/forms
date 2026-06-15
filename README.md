@@ -1,134 +1,210 @@
-# Form Builder
+# Form Builder - Docker Demonstration Project
 
-A containerized full-stack form builder application (React + Express + PostgreSQL) intended for learning and demos.
+> A containerized full-stack form builder application (React + Express + PostgreSQL) designed to demonstrate Docker concepts and containerization.
 
-## Project Structure
+## What is This Project?
 
-- `frontend/` - React (Vite) frontend app served by Nginx in production
-- `backend/` - Node.js + Express API
-- `database/` - PostgreSQL initialization / migrations
+A full-stack form builder application with:
+- **Frontend**: React 18 with Vite, served via Nginx
+- **Backend**: Express.js API with JWT authentication
+- **Database**: PostgreSQL 15
 
-## Quick Start
+While the app itself is functional, this repository is primarily used as a **learning resource to demonstrate Docker concepts**.
 
-1. Copy environment example:
+---
 
-```powershell
-copy .env.example .env
-```
+## Why This Project Exists
 
-2. Build and start the whole stack (recommended):
+This project was created to demonstrate:
+1. **Multi-stage Docker builds** - How to build efficiently and ship minimal production images
+2. **Docker Compose** - Orchestrating multi-container applications
+3. **Container networking** - Services communicating over isolated networks
+4. **Volume management** - Persistent data with PostgreSQL
+5. **Environment configuration** - Flexible configuration via `.env` and Docker
+6. **Health checks & retries** - Handling service dependencies gracefully
+
+## Docker Demonstration Guide
+
+### Key Docker Concepts Demonstrated
+
+| Concept | File | What You'll Learn |
+|---------|------|-------------------|
+| Multi-stage builds | `frontend/Dockerfile` | Building with full toolchain, shipping minimal runtime |
+| Layer caching | Both Dockerfiles | Optimizing build times with intelligent layer ordering |
+| Multi-container orchestration | `docker-compose.yml` | Managing complex applications with multiple services |
+| Network isolation | `docker-compose.yml` (`formnet`) | Container-to-container communication |
+| Volume persistence | `docker-compose.yml` (`pgdata`) | Data survives container restarts |
+
+### Quick Start
 
 ```bash
+# Build and start all services
+docker compose up --build
+
+# Access the application
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:4000/api
+```
+
+### Docker Commands You'll Encounter
+
+| Command | Purpose |
+|---------|---------|
+| `docker build -t myapp .` | Build an image from a Dockerfile |
+| `docker compose up --build` | Build images and start containers |
+| `docker compose down` | Stop all containers |
+| `docker compose down -v` | Stop and remove volumes (database reset) |
+| `docker compose build backend` | Rebuild a specific service |
+| `docker compose logs -f` | Follow logs from all services |
+| `docker ps` | List running containers |
+
+### Understanding the Architecture
+
+```
+┌─────────────────┐
+│     Frontend    │
+│  (nginx:80)     │
+└────────┬────────┘
+         │
+         │ proxy_pass
+         │
+┌────────▼────────┐
+│     Backend     │
+│  (node:4000)    │
+└────────┬────────┘
+         │
+         │ PostgreSQL
+         │
+┌────────▼────────┐
+│    PostgreSQL   │
+│  (postgres:5432)│
+└─────────────────┘
+```
+
+### Dockerfile Breakdown
+
+**Frontend (Multi-stage)**:
+```dockerfile
+# Stage 1: Build
+FROM node:20-alpine AS build
+# Install deps, build production bundle
+
+# Stage 2: Production
+FROM nginx:stable-alpine
+# Copy only the built assets
+# Serve with minimal nginx
+```
+
+**Backend**:
+```dockerfile
+FROM node:20-alpine
+# Install production deps only
+# Run the app directly
+```
+
+### Common Docker Tasks
+
+**Reset the database**:
+```bash
+docker compose down -v
 docker compose up --build
 ```
 
-3. Open the app in your browser:
-
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:4000/api
-
-For a fresh database reset (removes volumes):
-
+**View logs from a specific service**:
 ```bash
-docker compose down -v
+docker compose logs -f backend
+docker compose logs -f frontend
 ```
 
-## Docker Commands
+**Rebuild without cache**:
+```bash
+docker compose build --no-cache backend
+```
 
-- Build & start (foreground): `docker compose up --build`
-- Start in background: `docker compose up -d --build`
-- Stop: `docker compose down`
-- Remove volumes & stop: `docker compose down -v`
-- View logs: `docker compose logs -f` or `docker compose logs -f backend`
-- Rebuild a single service: `docker compose build backend`
+**Run a one-off command in a container**:
+```bash
+docker compose run --rm backend sh
+docker compose run --rm frontend sh
+```
 
-## Environment
+---
 
-Primary variables (see `.env.example`):
+## Project Structure
 
-- `PORT` — backend port (default: 4000)
-- `DATABASE_URL` — PostgreSQL connection string
-- `JWT_SECRET` — authentication secret
-- `VITE_API_URL` — override API base URL for frontend build (defaults to `/api` in production)
+- `frontend/` - React (Vite) frontend app served by Nginx
+- `backend/` - Node.js + Express API
+- `database/` - PostgreSQL initialization SQL
+- `docker-compose.yml` - Defines all services
 
-## Development
-
-- Run frontend locally with Vite: from `frontend/` run `npm install` then `npm run dev` (Vite serves on :5173 by default).
-- Run backend locally: from `backend/` run `npm install` then `npm run dev` (nodemon).
-- The frontend API client will use `import.meta.env.VITE_API_URL` when present, otherwise `/api` in production or `http://localhost:4000/api` in local dev.
+---
 
 ## API Overview
 
 Base URL: `/api`
 
-Auth:
+**Auth**:
+- `POST /api/auth/register` - Register user
+- `POST /api/auth/login` - Login
+- `GET /api/auth/me` - Current user (protected)
 
-- `POST /api/auth/register` — register { name, email, password } → returns JWT
-- `POST /api/auth/login` — login { email, password } → returns JWT
-- `GET /api/auth/me` — current user (protected)
+**Forms** (protected):
+- `GET /api/forms` - List forms
+- `POST /api/forms` - Create form
+- `GET /api/forms/:id` - Get form
+- `PUT /api/forms/:id` - Update form
+- `DELETE /api/forms/:id` - Delete form
 
-Forms & management (protected):
+**Public** (anonymous):
+- `GET /api/public/forms/:publicId` - Fetch public form
+- `POST /api/public/forms/:publicId/responses` - Submit response
 
-- `GET /api/forms` — list user forms
-- `POST /api/forms` — create form (title, description, questions)
-- `GET /api/forms/:id` — get form with questions/options
-- `PUT /api/forms/:id` — update form
-- `DELETE /api/forms/:id` — delete form
-- `POST /api/forms/:id/duplicate` — duplicate a form
-- `GET /api/forms/:id/responses` — view responses (owner only)
-- `GET /api/forms/:id/responses/export` — download CSV of responses
+---
 
-Public form endpoints (anonymous):
+## Environment Variables
 
-- `GET /api/public/forms/:publicId` — fetch public form for rendering
-- `POST /api/public/forms/:publicId/responses` — submit a response
+Key variables (see `.env.example`):
 
-All API endpoints return JSON and consistent error objects: `{ error: "message" }`.
+- `PORT` - Backend port (default: 4000)
+- `DATABASE_URL` - PostgreSQL connection string
+- `JWT_SECRET` - Authentication secret
+- `VITE_API_URL` - API base URL for frontend build
 
-## Database Schema Summary
+---
 
-Main tables (simplified):
+## Development (Non-Docker)
 
-- `users` — `id, name, email, password_hash, created_at`
-- `forms` — `id, user_id, public_id, title, description, created_at, updated_at`
-- `questions` — `id, form_id, type, label, required, order`
-- `options` — `id, question_id, value, label, order` (for dropdown/radio/checkbox)
-- `responses` — `id, form_id, submitted_at, metadata` (stores submission record)
-- `answers` — `id, response_id, question_id, value`
+```bash
+# Backend
+cd backend
+npm install
+npm run dev
 
-Relationships:
+# Frontend
+cd frontend
+npm install
+npm run dev
+```
 
-- `users` 1→N `forms`
-- `forms` 1→N `questions`
-- `questions` 1→N `options`
-- `forms` 1→N `responses`
-- `responses` 1→N `answers`
+The frontend API client uses `VITE_API_URL` when set, otherwise defaults to `http://localhost:4000/api` in dev.
 
-Indexes:
+---
 
-- `forms.user_id`, `forms.public_id`, `questions.form_id`, `responses.form_id`, `answers.response_id`
+## Database Schema
 
-See `database/` folder for initialization SQL or migration files.
+Main tables:
+- `users` - User accounts
+- `forms` - Form definitions
+- `questions` - Form questions
+- `options` - Question options
+- `responses` - Form submissions
+- `answers` - Individual answers
 
-## Screenshots
+---
 
-Add screenshots of key pages if preparing a demo or submission (Dashboard, Form Editor, Public Form, Responses). Store images in `docs/` or include them in your repo when needed.
+## Learning Resources
 
-## Learning Outcomes
+This project demonstrates Docker fundamentals. To learn more:
 
-This project demonstrates:
-
-- Containerizing a full-stack app with Docker Compose
-- Building a REST API with Express and PostgreSQL
-- Client-side form builder patterns in React (dynamic fields)
-- Authentication with JWT and protected routes
-- CSV export and reporting of collected responses
-- Basic production hardening (Dockerfiles, `.dockerignore`, DB readiness)
-
-## Troubleshooting
-
-- Backend fails to connect to DB on first start: the backend includes a retry loop — run `docker compose up` again or increase `DB_RETRY_MAX` in the environment.
-- Forgot to copy `.env`: run `copy .env.example .env` and restart.
-- Reset database: `docker compose down -v` then `docker compose up --build`.
-- See backend logs: `docker compose logs -f backend`.
-- Common permission or port conflicts: ensure ports 3000 and 4000 are free or change mapped ports in `docker-compose.yml`.
+1. **Docker docs**: https://docs.docker.com/
+2. **Docker Compose**: https://docs.docker.com/compose/
+3. **Best practices**: https://docs.docker.com/develop/_best-practices/

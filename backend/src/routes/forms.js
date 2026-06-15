@@ -90,7 +90,7 @@ router.post('/:id/questions', async (req, res) => {
     if (!isValidOptions(options)) {
       return res.status(400).json({ error: 'Choice questions require at least one valid option' });
     }
-  } else if (options != null) {
+  } else if (options != null && options.length > 0) {
     return res.status(400).json({ error: 'Only choice questions may include options' });
   }
 

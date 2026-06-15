@@ -109,19 +109,28 @@ export default function FormEditor() {
     setError(null);
 
     try {
-      const response = await api.post(`/forms/${formId}/questions`, {
+      console.log('Adding question:', {
         question_type: newQuestion.question_type,
         label: newQuestion.label.trim(),
         required: newQuestion.required,
         options: hasChoices ? [{ label: newOptionLabel.trim() }] : [],
       });
 
+      const response = await api.post(`/forms/${formId}/questions`, {
+        question_type: newQuestion.question_type,
+        label: newQuestion.label.trim(),
+        required: newQuestion.required,
+        ...(hasChoices ? { options: [{ label: newOptionLabel.trim() }] } : {}),
+      });
+
+      console.log('Question added successfully:', response.data);
       setQuestions((current) => [...current, response.data.question]);
       setNewQuestion({ question_type: 'short_text', label: '', required: false });
       setNewOptionLabel('');
       setMessage('Question added.');
     } catch (err) {
-      setError('Unable to add question.');
+      console.error('Error adding question:', err.response?.data, err.response?.status);
+      setError(err.response?.data?.error || 'Unable to add question.');
     } finally {
       setSaving(false);
     }

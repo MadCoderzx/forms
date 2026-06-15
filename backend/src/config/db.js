@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 
-const isRender = !!process.env.DATABASE_URL;
+const isRender = process.env.NODE_ENV === 'production';
 
 const pool = new Pool({
   connectionString:
