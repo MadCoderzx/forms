@@ -113,14 +113,16 @@ export default function FormEditor() {
         question_type: newQuestion.question_type,
         label: newQuestion.label.trim(),
         required: newQuestion.required,
-        options: hasChoices ? [{ label: newOptionLabel.trim() }] : [],
+        position: questions.length + 1,
+        options: hasChoices ? [{ label: newOptionLabel.trim(), position: 1 }] : [],
       });
 
       const response = await api.post(`/forms/${formId}/questions`, {
         question_type: newQuestion.question_type,
         label: newQuestion.label.trim(),
         required: newQuestion.required,
-        ...(hasChoices ? { options: [{ label: newOptionLabel.trim() }] } : {}),
+        position: questions.length + 1,
+        ...(hasChoices ? { options: [{ label: newOptionLabel.trim(), position: 1 }] } : {}),
       });
 
       console.log('Question added successfully:', response.data);
@@ -182,8 +184,10 @@ export default function FormEditor() {
     setError(null);
 
     try {
+      const question = questions.find((q) => q.id === questionId);
       const response = await api.post(`/forms/${formId}/questions/${questionId}/options`, {
         label: label.trim(),
+        position: (question.options?.length || 0) + 1,
       });
       setQuestions((current) =>
         current.map((question) =>
@@ -468,7 +472,7 @@ function QuestionCard({ question, onUpdate, onDelete, onAddOption, onUpdateOptio
     <div className="rounded-xl border border-slate-200 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Question #{question.id}</h3>
+          <h3 className="text-lg font-semibold">Question #{question.position || question.id}</h3>
           <p className="text-sm text-slate-600">{question.question_type.replace('_', ' ')}</p>
         </div>
         <button
